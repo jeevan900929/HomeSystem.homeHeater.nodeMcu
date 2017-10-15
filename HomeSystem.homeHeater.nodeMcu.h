@@ -4,6 +4,8 @@
 #ifndef HomeSystem.homeHeater.nodeMcu.h
 #define HomeSystem.homeHeater.nodeMcu.h
 
+#include "networkInfo.h"
+
 extern "C" {
 #include "user_interface.h"
 }
@@ -31,8 +33,8 @@ IPAddress subnet(255, 255, 255, 0); // set subnet mask to match your network
 
 #endif // ESP8266_INITIALIZATION
 
-const char* ssid = "sepuluhTimahSari@unifi W8901G";
-const char* password = "Abcd1234";
+const char* ssid = NETWORK_SSID;
+const char* password = NETWORK_PASSWORD;
 
 // Create an instance of the server
 // specify the port to listen on as an argument
