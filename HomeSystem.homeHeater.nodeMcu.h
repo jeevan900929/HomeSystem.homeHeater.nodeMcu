@@ -4,21 +4,19 @@
 #ifndef HomeSystem.homeHeater.nodeMcu.h
 #define HomeSystem.homeHeater.nodeMcu.h
 
+#include <ESP8266WiFi.h>
+#include <EEPROM.h>
+#include <Ticker.h>
 #include "networkInfo.h"
-
 extern "C" {
 #include "user_interface.h"
 }
 
-#include <ESP8266WiFi.h>
-#include <EEPROM.h>
-
-#include <Ticker.h>
+//mqtt
 
 #define SERIAL_BAUD 9600
 
 Ticker secondTick;
-
 volatile int watchdogCount = 0;
 
 #ifdef ESP8266_INITIALIZATION
@@ -36,9 +34,7 @@ IPAddress subnet(255, 255, 255, 0); // set subnet mask to match your network
 const char* ssid = NETWORK_SSID;
 const char* password = NETWORK_PASSWORD;
 
-// Create an instance of the server
-// specify the port to listen on as an argument
-WiFiServer server(80);
+WiFiServer server(80);  // Create an instance of the server, specify the port to listen on as an argument
 
 const int eepromSaveAddressFrontRoomsHeater = 10;
 const int eepromSaveAddressRearRoomsHeater = 20;
@@ -61,110 +57,35 @@ void ISRwatchdog()
 }
 #endif // WATCHDOG
 
-void parseHttpRequest(int &val, WiFiClient &client) {
+void initWdt()
+{
 
-  // Read the first line of the request
-  String req = client.readStringUntil('\r');
-
-#ifdef SERIAL_DEBUG
-  Serial.println(req);
-#endif // SERIAL_DEBUG
-  client.flush();
-
-  // Match the request
-  if (req.indexOf("/FrontRoomsHeater/On") != -1)
-    val = 0;
-  else if (req.indexOf("/FrontRoomsHeater/Off") != -1)
-    val = 1;
-  else if (req.indexOf("/FrontRoomsHeater/Status") != -1)
-    val = 2;
-  else if (req.indexOf("/RearRoomsHeater/On") != -1)
-    val = 3;
-  else if (req.indexOf("/RearRoomsHeater/Off") != -1)
-    val = 4;
-  else if (req.indexOf("/RearRoomsHeater/Status") != -1)
-    val = 5; /*/*
-  else if (req.indexOf("favicon.ico") != -1) {
-    s = "HTTP/1.1 404 No Favicon\r\n";
-    val = -2;
-  } */
-  else {
-    val = -1;
-#ifdef SERIAL_DEBUG
-    Serial.println("invalid request");
-#endif // SERIAL_DEBUG
-    client.stop();//
-    return;
-  }
+#ifdef WATCHDOG
+  ESP.wdtDisable();
+  secondTick.attach(1, ISRwatchdog);
+  ESP.wdtEnable(WDTO_8S);
+#endif // WATCHDOG
 
 }
 
-void switchRelay(int val) {
-
-  // Set GPIO2 & GPIO0 according to the request
-  if (val == 0) {
-    //frontstatus
-    EEPROM.write(eepromSaveAddressFrontRoomsHeater, (byte)1);
-    digitalWrite(FrontRoomsHeaterRelayPin, 1);
-  }
-  else if (val == 1) {
-    EEPROM.write(eepromSaveAddressFrontRoomsHeater, (byte)0);
-    digitalWrite(FrontRoomsHeaterRelayPin, 0);
-  }
-  else if (val == 3) {
-    //set eeprom
-    EEPROM.write(eepromSaveAddressRearRoomsHeater, (byte)1);
-    analogWrite(RearRoomsHeaterRelayPin, 1023);
-    //digitalWrite(RearRoomsHeaterRelayPin, 1);
-  }
-  else if (val == 4) {
-    //set eeprom
-    EEPROM.write(eepromSaveAddressRearRoomsHeater, (byte)0);
-    analogWrite(RearRoomsHeaterRelayPin, 0);
-    //digitalWrite(RearRoomsHeaterRelayPin, 0);
-  }
-  EEPROM.commit();
-
-}
-
-void sendHttpResponse(int val, WiFiClient &client) {
-
-  client.flush();
-
-  // Prepare the response
-  String s = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n<!DOCTYPE HTML>\r\n<html>\r\n";
-
-  if (val == 0)
-    s += "Front Rooms Heater turned on";
-  else if (val == 1)
-    s += "Front Rooms Heater turned off";
-  else if (val == 2)
-    s += (int)EEPROM.read(eepromSaveAddressFrontRoomsHeater); //frontstatus
-  else if (val == 3)
-    s += "Rear Rooms Heater turned on";
-  else if (val == 4)
-    s += "Rear Rooms Heater turned off";
-  else if (val == 5)
-    s += (int)EEPROM.read(eepromSaveAddressRearRoomsHeater); //rearstatus
-
-  //s += "&nbsp;&nbsp;<input type=button onClick=""parent.location='http://alienwareX51/'"" value='Return'>";
-
-  s += "</html>\n";
-
-  // Send the response to the client
-  client.print(s);
-  delay(1);//
+void feedWdt()
+{
+#ifdef WATCHDOG
+  ESP.wdtFeed();
+  Serial.print("Watchdog pat at ");
+  Serial.println(watchdogCount);
+  watchdogCount = 0;
+  yield();
+#endif // WATCHDOG
 }
 
 void initHardware()
 {
-
 #ifdef SERIAL_DEBUG
   Serial.begin(SERIAL_BAUD);
 #endif // SERIAL_DEBUG
 
   EEPROM.begin(512);
-
 }
 
 void getSavedSettings(byte &eepromSavedValueFrontRoomsHeater, byte &eepromSavedValueRearRoomsHeater)
@@ -176,14 +97,11 @@ void getSavedSettings(byte &eepromSavedValueFrontRoomsHeater, byte &eepromSavedV
   //frontstatus =
 
 #ifdef SERIAL_DEBUG
-
   Serial.print("Front Rooms heater saved value: ");
   Serial.println((int)eepromSavedValueFrontRoomsHeater);
   Serial.print("Rear Rooms heater saved value: ");
   Serial.println((int)eepromSavedValueRearRoomsHeater);
-
 #endif // SERIAL_DEBUG
-
 }
 
 void initRelays(int eepromSavedValueFrontRoomsHeater, int eepromSavedValueRearRoomsHeater)
@@ -194,30 +112,23 @@ void initRelays(int eepromSavedValueFrontRoomsHeater, int eepromSavedValueRearRo
   // prepare GPIO2
   pinMode(RearRoomsHeaterRelayPin, OUTPUT);
   digitalWrite(RearRoomsHeaterRelayPin, eepromSavedValueRearRoomsHeater);
+}
 
+void startServer()
+{
+  // Start the server
+  server.begin();
+
+#ifdef SERIAL_DEBUG
+  Serial.print("Server started at IP: ");
+
+  // Print the IP address
+  Serial.println(WiFi.localIP());
+#endif // SERIAL_DEBUG
 }
 
 void initWiFi()
 {
-
-}
-
-void startWiFi()
-{
-
-  // Connect to WiFi network
-
-#ifdef SERIAL_DEBUG
-
-  Serial.println();
-  Serial.println();
-  Serial.print("Connecting to ");
-  Serial.println(ssid);
-
-#endif // SERIAL_DEBUG
-
-  //  delay(10);
-
 #ifdef ESP8266_INITIALIZATION
 
 #ifdef CUSTOM_MAC
@@ -248,22 +159,24 @@ void startWiFi()
 
     WiFi.softAP(AP_NameChar, WiFiAPPSK);
   */
-
 #endif // ESP8266_INITIALIZATION
 
+#ifdef SERIAL_DEBUG
+  Serial.println();  Serial.println();  Serial.print("Connecting to ");  Serial.println(ssid);
+#endif // SERIAL_DEBUG
+
+  //  delay(10);
   WiFi.begin(ssid, password);
 
-  while (WiFi.status() != WL_CONNECTED) {
+  while (WiFi.status() != WL_CONNECTED)
+  {
     delay(500);
 
 #ifdef SERIAL_DEBUG
     Serial.print(".");
 #endif // SERIAL_DEBUG
 
-    ESP.wdtFeed();
-    watchdogCount = 0;
-    yield();
-
+    feedWdt();
   }
 
 #ifdef SERIAL_DEBUG
@@ -271,20 +184,120 @@ void startWiFi()
   Serial.println("WiFi connected");
 #endif // SERIAL_DEBUG
 
-  // Start the server
-  server.begin();
-
-#ifdef SERIAL_DEBUG
-  Serial.print("Server started at IP: ");
-
-  // Print the IP address
-  Serial.println(WiFi.localIP());
-#endif // SERIAL_DEBUG
+  startServer();
 }
 
-void initWdt()
+void processWiFi(WiFiClient &client)
 {
+  // Check if a client has connected
+  client = server.available();
+  if (!client)
+  {
+    return;
+  }
 
+  // Wait until the client sends some data
+  //delay(1);//Serial.println("new client");
+  while (!client.available())
+  {
+    delay(1);
+#ifdef SERIAL_DEBUG
+    Serial.print(".");
+#endif // SERIAL_DEBUG
+  }
+}
+
+void parseHttpRequest(int &val, WiFiClient &client)
+{
+  // Read the first line of the request
+  String req = client.readStringUntil('\r');
+
+#ifdef SERIAL_DEBUG
+  Serial.println(req);
+#endif // SERIAL_DEBUG
+  client.flush();
+
+  // Match the request
+  if (req.indexOf("/FrontRoomsHeater/On") != -1)
+    val = 0;
+  else if (req.indexOf("/FrontRoomsHeater/Off") != -1)
+    val = 1;
+  else if (req.indexOf("/FrontRoomsHeater/Status") != -1)
+    val = 2;
+  else if (req.indexOf("/RearRoomsHeater/On") != -1)
+    val = 3;
+  else if (req.indexOf("/RearRoomsHeater/Off") != -1)
+    val = 4;
+  else if (req.indexOf("/RearRoomsHeater/Status") != -1)
+    val = 5; /*
+  else if (req.indexOf("favicon.ico") != -1) {
+    s = "HTTP/1.1 404 No Favicon\r\n";
+    val = -2;
+  } */
+  else {
+    val = -1;
+#ifdef SERIAL_DEBUG
+    Serial.println("invalid request");
+#endif // SERIAL_DEBUG
+    client.stop();//
+    return;
+  }
+}
+
+void switchRelay(int val)
+{
+  // Set GPIO2 & GPIO0 according to the request
+  if (val == 0) {
+    //frontstatus
+    EEPROM.write(eepromSaveAddressFrontRoomsHeater, (byte)1);
+    digitalWrite(FrontRoomsHeaterRelayPin, 1);
+  }
+  else if (val == 1) {
+    EEPROM.write(eepromSaveAddressFrontRoomsHeater, (byte)0);
+    digitalWrite(FrontRoomsHeaterRelayPin, 0);
+  }
+  else if (val == 3) {
+    //set eeprom
+    EEPROM.write(eepromSaveAddressRearRoomsHeater, (byte)1);
+    analogWrite(RearRoomsHeaterRelayPin, 1023);
+    //digitalWrite(RearRoomsHeaterRelayPin, 1);
+  }
+  else if (val == 4) {
+    //set eeprom
+    EEPROM.write(eepromSaveAddressRearRoomsHeater, (byte)0);
+    analogWrite(RearRoomsHeaterRelayPin, 0);
+    //digitalWrite(RearRoomsHeaterRelayPin, 0);
+  }
+  EEPROM.commit();
+}
+
+void sendHttpResponse(int val, WiFiClient &client) 
+{
+  client.flush();
+
+  // Prepare the response
+  String s = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n<!DOCTYPE HTML>\r\n<html>\r\n";
+
+  if (val == 0)
+    s += "Front Rooms Heater turned on";
+  else if (val == 1)
+    s += "Front Rooms Heater turned off";
+  else if (val == 2)
+    s += (int)EEPROM.read(eepromSaveAddressFrontRoomsHeater); //frontstatus
+  else if (val == 3)
+    s += "Rear Rooms Heater turned on";
+  else if (val == 4)
+    s += "Rear Rooms Heater turned off";
+  else if (val == 5)
+    s += (int)EEPROM.read(eepromSaveAddressRearRoomsHeater); //rearstatus
+
+  //s += "&nbsp;&nbsp;<input type=button onClick=""parent.location='http://alienwareX51/'"" value='Return'>";
+
+  s += "</html>\n";
+
+  // Send the response to the client
+  client.print(s);
+  delay(1);//
 }
 
 #endif // HomeSystem.homeHeater.nodeMcu.h
