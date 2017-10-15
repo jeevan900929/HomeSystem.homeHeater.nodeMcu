@@ -13,7 +13,7 @@
 #undef SERIAL_DEBUG
 #undef WATCHDOG
 
-#include "HomeSystem.homeHeater.esp8266.h"
+#include "HomeSystem.homeHeater.nodeMcu.h"
 //mqtt
 
 void setup() {
