@@ -1,12 +1,24 @@
 /*
-    This sketch demonstrates how to set up a simple HTTP-like server.
-    The server will set a GPIO pin depending on the request
-      http://server_ip/RearRoomHeater/Off will set the GPIO2 low,
-      http://server_ip/RearRoomHeater/On will set the GPIO2 high
-      http://server_ip/FrontRoomHeater/Off will set the GPIO0 low,
-      http://server_ip/FrontRoomHeater/On will set the GPIO0 high
-    server_ip is the IP address of the ESP8266 module, will be
-    printed to Serial when the module is connected.
+  nodeMcu.homeHeater.HomeSystem
+
+  The server will set GPIO pins depending on the request
+  http://192.168.1.16/FrontRoomsHeater/Off will set the GPIO12 low,
+  http://192.168.1.16/FrontRoomsHeater/On will set the GPIO12 high,
+  http://192.168.1.16/RearRoomsHeater/Off will set the GPIO15 low,
+  http://192.168.1.16/RearRoomsHeater/On will set the GPIO15 high
+
+  The circuit:
+  * list the components attached to each input
+  Front Rooms Heater Relay attached to GPIO12
+  Rear Rooms Heater Relay attached to GPIO15
+
+  Created 17 Jul 2017
+  By jeevanAnga
+  Modified 16 Oct 2017
+  By jeevanAnga
+
+  https://github.com/jeevan900929/HomeSystem.homeHeater.nodeMcu/blob/master/README.md
+
 */
 
 #define ESP8266_INITIALIZATION
