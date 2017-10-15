@@ -1,5 +1,5 @@
-#ifndef HomeSystem.homeHeater.esp8266.h
-#define HomeSystem.homeHeater.esp8266.h
+#ifndef HomeSystem.homeHeater.nodeMcu.h
+#define HomeSystem.homeHeater.nodeMcu.h
 
 extern "C" {
 #include "user_interface.h"
@@ -282,4 +282,4 @@ void initWdt()
 
 }
 
-#endif // HomeSystem.homeHeater.esp8266.h
+#endif // HomeSystem.homeHeater.nodeMcu.h
