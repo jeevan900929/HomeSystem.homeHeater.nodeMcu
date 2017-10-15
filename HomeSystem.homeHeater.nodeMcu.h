@@ -31,8 +31,8 @@ IPAddress subnet(255, 255, 255, 0); // set subnet mask to match your network
 
 #endif // ESP8266_INITIALIZATION
 
-const char* ssid = "sepuluhTimahSari@unifi W8901G";
-const char* password = "Abcd1234";
+const char* ssid = "x";
+const char* password = "x";
 
 // Create an instance of the server
 // specify the port to listen on as an argument
