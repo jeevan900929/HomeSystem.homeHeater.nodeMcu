@@ -16,9 +16,6 @@ extern "C" {
 
 #define SERIAL_BAUD 9600
 
-Ticker secondTick;
-volatile int watchdogCount = 0;
-
 #ifdef ESP8266_INITIALIZATION
 
 #undef CUSTOM_MAC
@@ -46,10 +43,14 @@ const int RearRoomsHeaterRelayPin = 15;
 //rearstatus
 
 #ifdef WATCHDOG
+
+Ticker secondTick;
+volatile int watchdogCount = 0;
+
 void ISRwatchdog()
 {
   watchdogCount++;
-  if (watchdogCount == 15)
+  if (watchdogCount == 5)
   {
     Serial.println("the watchdog bit");
     ESP.reset();
@@ -197,9 +198,10 @@ void processWiFi(WiFiClient &client)
   }
 
   // Wait until the client sends some data
-  //delay(1);//Serial.println("new client");
+  delay(1);//Serial.println("new client");
   while (!client.available())
   {
+    //Fix bug that stalls program running here...
     delay(1);
 #ifdef SERIAL_DEBUG
     Serial.print(".");
@@ -213,7 +215,8 @@ void parseHttpRequest(int &val, WiFiClient &client)
   String req = client.readStringUntil('\r');
 
 #ifdef SERIAL_DEBUG
-  Serial.println(req);
+  //if (req != "\r")
+    //Serial.println(req);
 #endif // SERIAL_DEBUG
   client.flush();
 
@@ -237,7 +240,7 @@ void parseHttpRequest(int &val, WiFiClient &client)
   else {
     val = -1;
 #ifdef SERIAL_DEBUG
-    Serial.println("invalid request");
+    //Serial.println("No valid request");
 #endif // SERIAL_DEBUG
     client.stop();//
     return;
@@ -271,7 +274,7 @@ void switchRelay(int val)
   EEPROM.commit();
 }
 
-void sendHttpResponse(int val, WiFiClient &client) 
+void sendHttpResponse(int val, WiFiClient &client)
 {
   client.flush();
 

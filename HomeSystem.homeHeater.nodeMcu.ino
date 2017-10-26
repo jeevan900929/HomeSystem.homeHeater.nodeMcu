@@ -22,8 +22,8 @@
 */
 
 #define ESP8266_INITIALIZATION
+#define WATCHDOG
 #undef SERIAL_DEBUG
-#undef WATCHDOG
 
 #include "HomeSystem.homeHeater.nodeMcu.h"
 
@@ -46,14 +46,14 @@ void loop()
   WiFiClient client;
 
   processWiFi(client);
-
+  delay(5);
   int val;
   parseHttpRequest(val, client);
-
+  delay(5);
   switchRelay(val);
-
+  delay(5);
   sendHttpResponse(val, client);
-
+  delay(5);
   feedWdt();
 }
 
