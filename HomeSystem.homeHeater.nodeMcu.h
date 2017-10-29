@@ -128,6 +128,41 @@ void startServer()
 #endif // SERIAL_DEBUG
 }
 
+void reportToBackendServer(int event)
+{
+  const char http_site[] = "www.example.com";
+  const int http_port = 80;
+
+  WiFiClient client;
+
+  if ( client.connect(http_site, http_port) ) {
+    // Make an HTTP GET request
+    switch (event)
+    {
+      case -1:
+        client.println("GET /bootup.html HTTP/1.1");
+        break;
+      case 0:
+        client.println("GET /frontOn.html HTTP/1.1");
+        break;
+      case 1:
+        client.println("GET /frontOff.html HTTP/1.1");
+        break;
+      case 2:
+        client.println("GET /rearOn.html HTTP/1.1");
+        break;
+      case 3:
+        client.println("GET /rearOff.html HTTP/1.1");
+        break;
+    }
+    client.print("Host: ");
+    client.println(http_site);
+    client.println("Connection: close");
+    client.println();
+  }
+
+}
+
 void initWiFi()
 {
 #ifdef ESP8266_INITIALIZATION
@@ -186,6 +221,8 @@ void initWiFi()
 #endif // SERIAL_DEBUG
 
   startServer();
+
+  //reportToBackendServer(-1);
 }
 
 void processWiFi(WiFiClient &client)
@@ -216,7 +253,7 @@ void parseHttpRequest(int &val, WiFiClient &client)
 
 #ifdef SERIAL_DEBUG
   //if (req != "\r")
-    //Serial.println(req);
+  //Serial.println(req);
 #endif // SERIAL_DEBUG
   client.flush();
 
@@ -254,22 +291,26 @@ void switchRelay(int val)
     //frontstatus
     EEPROM.write(eepromSaveAddressFrontRoomsHeater, (byte)1);
     digitalWrite(FrontRoomsHeaterRelayPin, 1);
+    //reportToBackendServer(0);
   }
   else if (val == 1) {
     EEPROM.write(eepromSaveAddressFrontRoomsHeater, (byte)0);
     digitalWrite(FrontRoomsHeaterRelayPin, 0);
+    //reportToBackendServer(1);
   }
   else if (val == 3) {
     //set eeprom
     EEPROM.write(eepromSaveAddressRearRoomsHeater, (byte)1);
     analogWrite(RearRoomsHeaterRelayPin, 1023);
     //digitalWrite(RearRoomsHeaterRelayPin, 1);
+    //reportToBackendServer(2);
   }
   else if (val == 4) {
     //set eeprom
     EEPROM.write(eepromSaveAddressRearRoomsHeater, (byte)0);
     analogWrite(RearRoomsHeaterRelayPin, 0);
     //digitalWrite(RearRoomsHeaterRelayPin, 0);
+    //reportToBackendServer(3);
   }
   EEPROM.commit();
 }
