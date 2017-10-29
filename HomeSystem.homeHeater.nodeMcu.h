@@ -130,8 +130,8 @@ void startServer()
 
 void reportToBackendServer(int event)
 {
-  const char http_site[] = "www.example.com";
-  const int http_port = 80;
+  const char http_site[] = "192.168.1.11";
+  const int http_port = 3000;
 
   WiFiClient client;
 
