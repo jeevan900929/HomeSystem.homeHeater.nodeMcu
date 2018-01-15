@@ -5,6 +5,7 @@
 #define HomeSystem.homeHeater.nodeMcu.h
 
 #include <ESP8266WiFi.h>
+#include <ESP8266HTTPClient.h>
 #include <EEPROM.h>
 #include <Ticker.h>
 #include "networkInfo.h"
@@ -39,8 +40,10 @@ const int eepromSaveAddressRearRoomsHeater = 20;
 const int FrontRoomsHeaterRelayPin = 12;
 const int RearRoomsHeaterRelayPin = 15;
 
-//frontstatus
-//rearstatus
+const int rearRoomsHeaterSwitchInputPin = 13;
+
+bool frontstatus = false;
+bool rearstatus = false;
 
 #ifdef WATCHDOG
 
@@ -86,6 +89,8 @@ void initHardware()
   Serial.begin(SERIAL_BAUD);
 #endif // SERIAL_DEBUG
 
+  pinMode(rearRoomsHeaterSwitchInputPin, INPUT_PULLUP);
+
   EEPROM.begin(512);
 }
 
@@ -94,14 +99,14 @@ void getSavedSettings(byte &eepromSavedValueFrontRoomsHeater, byte &eepromSavedV
   // read a byte from the current address of the EEPROM
   eepromSavedValueFrontRoomsHeater = EEPROM.read(eepromSaveAddressFrontRoomsHeater);
   eepromSavedValueRearRoomsHeater = EEPROM.read(eepromSaveAddressRearRoomsHeater);
-  //frontstatus = (int)eepromSavedValueFrontRoomsHeater)
-  //frontstatus =
+  frontstatus = (bool)eepromSavedValueFrontRoomsHeater;
+  rearstatus = (bool)eepromSavedValueRearRoomsHeater;
 
 #ifdef SERIAL_DEBUG
   Serial.print("Front Rooms heater saved value: ");
-  Serial.println((int)eepromSavedValueFrontRoomsHeater);
+  Serial.println((bool)frontstatus);
   Serial.print("Rear Rooms heater saved value: ");
-  Serial.println((int)eepromSavedValueRearRoomsHeater);
+  Serial.println((bool)rearstatus);
 #endif // SERIAL_DEBUG
 }
 
@@ -109,10 +114,20 @@ void initRelays(int eepromSavedValueFrontRoomsHeater, int eepromSavedValueRearRo
 {
   // prepare GPIO0 with eeprom setting
   pinMode(FrontRoomsHeaterRelayPin, OUTPUT);
-  digitalWrite(FrontRoomsHeaterRelayPin, eepromSavedValueFrontRoomsHeater); //fonrtstatus
+  digitalWrite(FrontRoomsHeaterRelayPin, (int)frontstatus);
+  //digitalWrite(FrontRoomsHeaterRelayPin, eepromSavedValueFrontRoomsHeater);
   // prepare GPIO2
   pinMode(RearRoomsHeaterRelayPin, OUTPUT);
-  digitalWrite(RearRoomsHeaterRelayPin, eepromSavedValueRearRoomsHeater);
+  digitalWrite(RearRoomsHeaterRelayPin, (int)rearstatus);
+  //digitalWrite(RearRoomsHeaterRelayPin, eepromSavedValueRearRoomsHeater);
+}
+
+void initClientState()
+{
+  byte eepromSavedValueFrontRoomsHeater, eepromSavedValueRearRoomsHeater;
+  getSavedSettings(eepromSavedValueFrontRoomsHeater, eepromSavedValueRearRoomsHeater);
+
+  initRelays((int)eepromSavedValueFrontRoomsHeater, (int)eepromSavedValueRearRoomsHeater);
 }
 
 void startServer()
@@ -225,6 +240,49 @@ void initWiFi()
   //reportToBackendServer(-1);
 }
 
+void updateServerState(int serverStateMode) //reportToBackendServer
+{
+  HTTPClient http;
+
+  Serial.print("[HTTP] begin...\n");
+  // configure traged server and url
+  //http.begin("https://192.168.1.12/test.html", "7a 9c f4 db 40 d3 62 5a 6e 21 bc 5c cc 66 c8 3e a1 45 59 38"); //HTTPS
+  http.begin("http://192.168.1.11:3100/heaters/23"); //HTTP
+
+  Serial.print("[HTTP] GET...\n");
+  // start connection and send HTTP header
+  int httpCode = http.GET();
+
+  // httpCode will be negative on error
+  if (httpCode > 0) {
+    // HTTP header has been send and Server response header has been handled
+    Serial.printf("[HTTP] GET... code: %d\n", httpCode);
+
+    // file found at server
+    if (httpCode == HTTP_CODE_OK) {
+      String payload = http.getString();
+      Serial.println(payload);
+    }
+  } else {
+    Serial.printf("[HTTP] GET... failed, error: %s\n", http.errorToString(httpCode).c_str());
+  }
+
+  http.end();
+}
+
+void readSwitchState()
+{
+  bool rearSwitchState = (bool)digitalRead(rearRoomsHeaterSwitchInputPin);
+  //frontstatus = (bool)digitalRead(frontRoomsHeaterSwitchInputPin);
+
+  if (rearSwitchState != rearstatus)
+  {
+    rearstatus = rearSwitchState;
+    //if switch on, off relay;
+    updateServerState(0);
+  }
+}
+
 void processWiFi(WiFiClient &client)
 {
   // Check if a client has connected
@@ -290,17 +348,20 @@ void switchRelay(int val)
   if (val == 0) {
     //frontstatus
     EEPROM.write(eepromSaveAddressFrontRoomsHeater, (byte)1);
+    frontstatus = true;
     digitalWrite(FrontRoomsHeaterRelayPin, 1);
     //reportToBackendServer(0);
   }
   else if (val == 1) {
     EEPROM.write(eepromSaveAddressFrontRoomsHeater, (byte)0);
+    frontstatus = false;
     digitalWrite(FrontRoomsHeaterRelayPin, 0);
     //reportToBackendServer(1);
   }
   else if (val == 3) {
     //set eeprom
     EEPROM.write(eepromSaveAddressRearRoomsHeater, (byte)1);
+    rearstatus = true;
     analogWrite(RearRoomsHeaterRelayPin, 1023);
     //digitalWrite(RearRoomsHeaterRelayPin, 1);
     //reportToBackendServer(2);
@@ -308,6 +369,7 @@ void switchRelay(int val)
   else if (val == 4) {
     //set eeprom
     EEPROM.write(eepromSaveAddressRearRoomsHeater, (byte)0);
+    rearstatus = false;
     analogWrite(RearRoomsHeaterRelayPin, 0);
     //digitalWrite(RearRoomsHeaterRelayPin, 0);
     //reportToBackendServer(3);
@@ -327,13 +389,15 @@ void sendHttpResponse(int val, WiFiClient &client)
   else if (val == 1)
     s += "Front Rooms Heater turned off";
   else if (val == 2)
-    s += (int)EEPROM.read(eepromSaveAddressFrontRoomsHeater); //frontstatus
+    //s += (int)EEPROM.read(eepromSaveAddressFrontRoomsHeater);
+    s += (int)frontstatus;
   else if (val == 3)
     s += "Rear Rooms Heater turned on";
   else if (val == 4)
     s += "Rear Rooms Heater turned off";
   else if (val == 5)
-    s += (int)EEPROM.read(eepromSaveAddressRearRoomsHeater); //rearstatus
+    //s += (int)EEPROM.read(eepromSaveAddressRearRoomsHeater);
+    s += (int)rearstatus;
 
   //s += "&nbsp;&nbsp;<input type=button onClick=""parent.location='http://alienwareX51/'"" value='Return'>";
 

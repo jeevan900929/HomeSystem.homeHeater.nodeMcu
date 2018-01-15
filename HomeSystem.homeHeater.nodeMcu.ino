@@ -23,7 +23,7 @@
 
 #define ESP8266_INITIALIZATION
 #define WATCHDOG
-#undef SERIAL_DEBUG
+#define SERIAL_DEBUG
 
 #include "HomeSystem.homeHeater.nodeMcu.h"
 
@@ -33,11 +33,8 @@ void setup()
 
   initHardware();
 
-  byte eepromSavedValueFrontRoomsHeater, eepromSavedValueRearRoomsHeater;
-  getSavedSettings(eepromSavedValueFrontRoomsHeater, eepromSavedValueRearRoomsHeater);
-
-  initRelays((int)eepromSavedValueFrontRoomsHeater, (int)eepromSavedValueRearRoomsHeater);
-
+  initClientState();
+  
   initWiFi();
 }
 
@@ -45,6 +42,8 @@ void loop()
 {
   WiFiClient client;
 
+  readSwitchState();
+  delay(5);
   processWiFi(client);
   delay(5);
   int val;
