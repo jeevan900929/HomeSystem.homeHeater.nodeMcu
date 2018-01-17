@@ -36,11 +36,17 @@ WiFiServer server(80);  // Create an instance of the server, specify the port to
 
 const int eepromSaveAddressFrontRoomsHeater = 10;
 const int eepromSaveAddressRearRoomsHeater = 20;
+const int eepromSaveAddressFrontRoomsHeaterSwitchState = 15;
+const int eepromSaveAddressRearRoomsHeaterSwitchState = 25;
 
 const int FrontRoomsHeaterRelayPin = 12;
 const int RearRoomsHeaterRelayPin = 15;
 
+const int frontRoomsHeaterSwitchInputPin = 14;
 const int rearRoomsHeaterSwitchInputPin = 13;
+
+bool frontSwitchState = false;
+bool rearSwitchState = false;
 
 bool frontstatus = false;
 bool rearstatus = false;
@@ -53,7 +59,7 @@ volatile int watchdogCount = 0;
 void ISRwatchdog()
 {
   watchdogCount++;
-  if (watchdogCount == 5)
+  if (watchdogCount == 9)
   {
     Serial.println("the watchdog bit");
     ESP.reset();
@@ -126,6 +132,8 @@ void initClientState()
 {
   byte eepromSavedValueFrontRoomsHeater, eepromSavedValueRearRoomsHeater;
   getSavedSettings(eepromSavedValueFrontRoomsHeater, eepromSavedValueRearRoomsHeater);
+
+  rearSwitchState = (bool)EEPROM.read(eepromSaveAddressRearRoomsHeaterSwitchState);
 
   initRelays((int)eepromSavedValueFrontRoomsHeater, (int)eepromSavedValueRearRoomsHeater);
 }
@@ -272,12 +280,23 @@ void updateServerState(int serverStateMode) //reportToBackendServer
 
 void readSwitchState()
 {
-  bool rearSwitchState = (bool)digitalRead(rearRoomsHeaterSwitchInputPin);
+  rearSwitchState = (bool)digitalRead(rearRoomsHeaterSwitchInputPin);
   //frontstatus = (bool)digitalRead(frontRoomsHeaterSwitchInputPin);
 
   if (rearSwitchState != rearstatus)
   {
     rearstatus = rearSwitchState;
+    //set eeprom
+    if (rearstatus)
+    {
+      EEPROM.write(eepromSaveAddressRearRoomsHeaterSwitchState, (byte)1);
+      EEPROM.write(eepromSaveAddressRearRoomsHeater, (byte)1);
+    }
+    else
+    {
+      EEPROM.write(eepromSaveAddressRearRoomsHeaterSwitchState, (byte)0);
+      EEPROM.write(eepromSaveAddressRearRoomsHeater, (byte)0);
+    }
     //if switch on, off relay;
     updateServerState(0);
   }
