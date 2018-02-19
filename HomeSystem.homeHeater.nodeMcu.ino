@@ -14,7 +14,7 @@
 
   Created 17 Jul 2017
   By jeevanAnga
-  Modified 16 Oct 2017
+  Modified 19 Feb 2018
   By jeevanAnga
 
   https://github.com/jeevan900929/HomeSystem.homeHeater.nodeMcu/blob/master/README.md
