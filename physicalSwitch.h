@@ -10,6 +10,11 @@ bool rearSwitchState = false;
 const int eepromSaveAddressFrontRoomsHeaterSwitchState = 15;
 const int eepromSaveAddressRearRoomsHeaterSwitchState = 25;
 
+void initPhysicalSwitches()
+{  
+  pinMode(rearRoomsHeaterSwitchInputPin, INPUT_PULLUP);
+}
+
 void readSwitchState()
 {
   rearSwitchState = (bool)digitalRead(rearRoomsHeaterSwitchInputPin);

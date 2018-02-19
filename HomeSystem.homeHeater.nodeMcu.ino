@@ -29,17 +29,21 @@
 
 void setup()
 {
-  initWdt();
-
   initHardware();
 
   initClientState();
-  
-  initWiFi();
+
 }
 
 void loop()
 {
+
+  if (clientStateIsChanged || serverStateIsChanged)
+  {
+    updateClientState();
+    updateServerState();
+  }
+
   WiFiClient client;
 
   readSwitchState();

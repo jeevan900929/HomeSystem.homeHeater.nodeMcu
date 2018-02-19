@@ -3,6 +3,8 @@
 
 #ifdef WATCHDOG
 
+#include <Ticker.h>
+
 Ticker secondTick;
 volatile int watchdogCount = 0;
 
@@ -17,7 +19,7 @@ void ISRwatchdog()
 }
 #endif // WATCHDOG
 
-void initWdt()
+void initWatchDogTimer()
 {
 
 #ifdef WATCHDOG

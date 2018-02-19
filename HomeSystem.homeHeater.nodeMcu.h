@@ -4,10 +4,7 @@
 #ifndef HomeSystem.homeHeater.nodeMcu.h
 #define HomeSystem.homeHeater.nodeMcu.h
 
-#include <ESP8266WiFi.h>
 #include <ESP8266HTTPClient.h>
-#include <EEPROM.h>
-#include <Ticker.h>
 #include "networkInfo.h"
 extern "C" {
 #include "user_interface.h"
@@ -23,51 +20,62 @@ const char* ssid = NETWORK_SSID;
 const char* password = NETWORK_PASSWORD;
 
 #include "watchDogTimer.h"
-#include "bc.h"
+#include "eeprom.h"
+#include "debugOutput.h"
+#include "backEndConnection.h"
 #include "physicalSwitch.h"
 #include "relay.h"
 #include "webServer.h"
-#include "wifi.h"
+#include "webClient.h"
 
 //mqtt
 
-#define SERIAL_BAUD 9600
-
 void initHardware()
 {
-#ifdef SERIAL_DEBUG
-  Serial.begin(SERIAL_BAUD);
-#endif // SERIAL_DEBUG
+  initWatchDogTimer();
 
-  pinMode(rearRoomsHeaterSwitchInputPin, INPUT_PULLUP);
+  initEeprom();
 
-  EEPROM.begin(512);
-}
+  initDebugOutput();
 
-void getSavedSettings(byte &eepromSavedValueFrontRoomsHeater, byte &eepromSavedValueRearRoomsHeater)
-{
-  // read a byte from the current address of the EEPROM
-  eepromSavedValueFrontRoomsHeater = EEPROM.read(eepromSaveAddressFrontRoomsHeater);
-  eepromSavedValueRearRoomsHeater = EEPROM.read(eepromSaveAddressRearRoomsHeater);
-  frontstatus = (bool)eepromSavedValueFrontRoomsHeater;
-  rearstatus = (bool)eepromSavedValueRearRoomsHeater;
+  initPhysicalSwitches();
 
-#ifdef SERIAL_DEBUG
-  Serial.print("Front Rooms heater saved value: ");
-  Serial.println((bool)frontstatus);
-  Serial.print("Rear Rooms heater saved value: ");
-  Serial.println((bool)rearstatus);
-#endif // SERIAL_DEBUG
+  initWebClient();
+
 }
 
 void initClientState()
 {
+  getEepromSettings();
+
+  setRelays();
+
   byte eepromSavedValueFrontRoomsHeater, eepromSavedValueRearRoomsHeater;
   getSavedSettings(eepromSavedValueFrontRoomsHeater, eepromSavedValueRearRoomsHeater);
 
   rearSwitchState = (bool)EEPROM.read(eepromSaveAddressRearRoomsHeaterSwitchState);
 
   initRelays((int)eepromSavedValueFrontRoomsHeater, (int)eepromSavedValueRearRoomsHeater);
+}
+
+boolean clientStateIsChanged()
+{
+
+}
+
+boolean serverStateIsChanged()
+{
+
+}
+
+void updateClientState()
+{
+
+}
+
+void updateServerState()
+{
+
 }
 
 #endif // HomeSystem.homeHeater.nodeMcu.h

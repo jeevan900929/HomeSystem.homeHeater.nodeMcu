@@ -1,21 +1,6 @@
 #ifndef webServer.h
 #define webServer.h
 
-WiFiServer server(80);  // Create an instance of the server, specify the port to listen on as an argument
-
-void startServer()
-{
-  // Start the server
-  server.begin();
-
-#ifdef SERIAL_DEBUG
-  Serial.print("Server started at IP: ");
-
-  // Print the IP address
-  Serial.println(WiFi.localIP());
-#endif // SERIAL_DEBUG
-}
-
 void parseHttpRequest(int &val, WiFiClient &client)
 {
   // Read the first line of the request

@@ -4,6 +4,11 @@
 const int FrontRoomsHeaterRelayPin = 12;
 const int RearRoomsHeaterRelayPin = 15;
 
+void setRelays()
+{
+
+}
+
 void initRelays(int eepromSavedValueFrontRoomsHeater, int eepromSavedValueRearRoomsHeater)
 {
   // prepare GPIO0 with eeprom setting
