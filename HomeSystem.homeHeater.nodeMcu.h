@@ -5,7 +5,6 @@
 #define HomeSystem.homeHeater.nodeMcu.h
 
 #include <ESP8266HTTPClient.h>
-#include "networkInfo.h"
 extern "C" {
 #include "user_interface.h"
 }
@@ -15,9 +14,6 @@ bool rearstatus = false;
 
 const int eepromSaveAddressFrontRoomsHeater = 10;
 const int eepromSaveAddressRearRoomsHeater = 20;
-
-const char* ssid = NETWORK_SSID;
-const char* password = NETWORK_PASSWORD;
 
 #include "watchDogTimer.h"
 #include "eeprom.h"

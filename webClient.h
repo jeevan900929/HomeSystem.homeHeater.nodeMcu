@@ -1,6 +1,8 @@
 #ifndef webClient.h
 #define webClient.h
 
+#include "networkInfo.h"
+
 #ifdef ESP8266_INITIALIZATION
 
 #include <ESP8266WiFi.h>
@@ -16,6 +18,9 @@ IPAddress gateway(192, 168, 1, 1); // set gateway to match your network
 IPAddress subnet(255, 255, 255, 0); // set subnet mask to match your network
 
 #endif // ESP8266_INITIALIZATION
+
+const char* ssid = NETWORK_SSID;
+const char* password = NETWORK_PASSWORD;
 
 void startServer()
 {
