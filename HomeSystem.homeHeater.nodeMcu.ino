@@ -37,25 +37,29 @@ void setup()
 
 void loop()
 {
-
-  if (clientStateIsChanged || serverStateIsChanged)
-  {
-    updateClientState();
+  /*
+    if (clientStateIsChanged || serverStateIsChanged)
+    {
+      updateClientState();
+      updateServerState();
+    }
+  */
+  if (clientStateIsChanged)
     updateServerState();
-  }
-
-  WiFiClient client;
+  else if (serverStateIsChanged)
+    updateClientState();
 
   readSwitchState();
   delay(5);
-  processWiFi(client);
+  processWiFi();
   delay(5);
+
   int val;
-  parseHttpRequest(val, client);
+  parseHttpRequest(val);
   delay(5);
   switchRelay(val);
   delay(5);
-  sendHttpResponse(val, client);
+  sendHttpResponse(val);
   delay(5);
   feedWdt();
 }

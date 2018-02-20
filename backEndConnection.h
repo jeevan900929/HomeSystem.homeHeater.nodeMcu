@@ -42,7 +42,8 @@ void updateServerState(int serverStateMode) //reportToBackendServer
   Serial.print("[HTTP] begin...\n");
   // configure traged server and url
   //http.begin("https://192.168.1.12/test.html", "7a 9c f4 db 40 d3 62 5a 6e 21 bc 5c cc 66 c8 3e a1 45 59 38"); //HTTPS
-  http.begin("http://192.168.1.11:3100/heaters/rear/5a827c6c5eafd22b646968d0"); //HTTP
+  String url0 = "http://192.168.1.11:3100/heaters/rear/5a827c6c5eafd22b646968d0";
+  http.begin(url0); //HTTP
 
   Serial.print("[HTTP] GET...\n");
   // start connection and send HTTP header
