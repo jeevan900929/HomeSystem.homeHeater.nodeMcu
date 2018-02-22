@@ -51,6 +51,8 @@ void updateServerState(int serverStateMode) //reportToBackendServer
   int httpCode0;
 
   http.addHeader("content-type", "application/json", false, false);
+  http.addHeader("authorization", "basic YWRtaW5pc3RyYXRvcjpwYXNzd29yZA==", false, false);
+  
   String payload0;
 
   if (rearstatus)
